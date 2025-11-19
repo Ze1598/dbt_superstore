@@ -119,7 +119,7 @@ models:
 1. **Clone the repository**
    ```bash
    git clone <your-repo-url>
-   cd data-challenge-blanc
+   cd dbt_superstore
    ```
 
 2. **Configure dbt profile**
