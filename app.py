@@ -56,7 +56,7 @@ if engine:
         default = years_available
     )
     # And a numeric input for the Top N visuals
-    topn_input = st.sidebar.number_input("Top N States", min_value=1, value=5, step=1)
+    topn_input = st.sidebar.number_input("Top N Values to Display", min_value=1, value=5, step=1)
     topn_measure_input = st.sidebar.selectbox("Top N Measure", options=("state", "customer", "product"), placeholder="state", format_func=str.capitalize)
 
     ################################################################
