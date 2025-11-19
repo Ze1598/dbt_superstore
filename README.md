@@ -111,9 +111,6 @@ models:
 
 ## Quick Start
 
-### Prerequisites
-
-
 ### Setup
 
 1. **Clone the repository**
@@ -181,6 +178,10 @@ The Streamlit dashboard provides interactive analytics:
 
 **Tech Stack**: Streamlit + Plotly (Express) + SQLAlchemy
 
+
+![alt text](media/streamlit_screenshot.png)
+
+
 ---
 
 ## Project Structure
@@ -222,6 +223,8 @@ The Streamlit dashboard provides interactive analytics:
 │   └── packages.yml               # dbt_utils dependency
 ├── scripts/
 │   └── xls_to_csv.py              # Data extraction script
+├── media/
+│   └── streamlit_screenshot.png.  # Dashboard screenshot
 ├── app.py                         # Streamlit dashboard
 ├── docker-compose.yml             # PostgreSQL container
 ├── justfile                       # Task automation
