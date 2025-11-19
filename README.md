@@ -113,7 +113,6 @@ models:
 
 ### Prerequisites
 
-See [Prerequisites](#prerequisites-from-original-challenge) for full list of required tools.
 
 ### Setup
 
