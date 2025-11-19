@@ -1,0 +1,203 @@
+version: 2
+
+models:
+  - name: stg__orders
+    description: "Staging model for order-level information including ship mode and segment"
+    columns:
+      - name: order_id
+        description: "Unique identifier for each order"
+        tests:
+          - unique
+          - not_null
+
+      - name: ship_mode
+        description: "Shipping method selected for the order"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Standard Class', 'Second Class', 'First Class', 'Same Day']
+
+      - name: segment
+        description: "Customer segment (Consumer, Corporate, Home Office)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Consumer', 'Corporate', 'Home Office']
+
+  - name: stg__returns
+    description: "Staging model for returned orders"
+    columns:
+      - name: order_id
+        description: "Order ID that was returned"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg__orders')
+              field: order_id
+              config:
+                severity: warn  # Won't stop build, just warns
+
+      - name: is_returned
+        description: "Binary flag: 1 = returned, 0 = not returned"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+  - name: stg__customer
+    description: "Staging model for customer information"
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - unique
+          - not_null
+
+      - name: customer_name
+        description: "Full name of the customer"
+        tests:
+          - not_null
+
+  - name: stg__product
+    description: "Staging model for product catalog"
+    columns:
+      - name: product_id
+        description: "Product identifier (part of composite business key with product_name)"
+        tests:
+          - not_null
+
+      - name: product_name
+        description: "Full product name (part of composite business key with product_id)"
+        tests:
+          - not_null
+
+      - name: category
+        description: "High-level product category"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Furniture', 'Office Supplies', 'Technology']
+
+      - name: sub_category
+        description: "Product sub-category within main category"
+        tests:
+          - not_null
+
+    tests:
+      # Test that the composite business key (product_id + product_name) is unique
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - product_id
+            - product_name
+
+  - name: stg__geography
+    description: "Staging model for geographic locations"
+    columns:
+      - name: country_region
+        description: "Country/Region name"
+        tests:
+          - not_null
+
+      - name: city
+        description: "City name"
+        tests:
+          - not_null
+
+      - name: state
+        description: "State or province"
+        tests:
+          - not_null
+
+      - name: postal_code
+        description: "Postal/ZIP code (defaults to '0000' if missing)"
+        tests:
+          - not_null
+
+      - name: region
+        description: "Regional classification (Central, East, South, West)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Central', 'East', 'South', 'West']
+
+  - name: stg__orders_transactions
+    description: "Staging model for order transaction details with metrics"
+    columns:
+      - name: order_id
+        description: "Order identifier linking to order dimension"
+        tests:
+          - not_null
+
+      - name: product_id
+        description: "Product identifier (part of composite key with product_name)"
+        tests:
+          - not_null
+
+      - name: product_name
+        description: "Product name (part of composite key with product_id)"
+        tests:
+          - not_null
+
+      - name: customer_id
+        description: "Customer identifier"
+        tests:
+          - not_null
+
+      - name: country_region
+        description: "Country/Region for the order"
+        tests:
+          - not_null
+
+      - name: city
+        description: "City for the order"
+        tests:
+          - not_null
+
+      - name: postal_code
+        description: "Postal code for the order"
+        tests:
+          - not_null
+
+      - name: order_date_numeric
+        description: "Order date in YYYYMMDD integer format"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 20100101"  # Reasonable date range
+
+      - name: ship_date_numeric
+        description: "Ship date in YYYYMMDD integer format"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= order_date_numeric"  # Ship date must be >= order date
+
+      - name: sales
+        description: "Sales amount for the transaction"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+
+      - name: quantity
+        description: "Quantity of items ordered"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              inclusive: true
+
+      - name: discount
+        description: "Discount percentage applied (0-1 range)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+              inclusive: true
+
+      - name: profit
+        description: "Profit amount (can be negative)"
+        tests:
+          - not_null

@@ -1,0 +1,276 @@
+version: 2
+
+models:
+  - name: dim__customer
+    description: "Customer dimension with surrogate keys and hash values for SCD tracking"
+    columns:
+      - name: customer_key
+        description: "Surrogate key (auto-incrementing integer)"
+        tests:
+          - unique
+          - not_null
+
+      - name: customer_bkey
+        description: "Business key (original customer_id from source)"
+        tests:
+          - unique
+          - not_null
+
+      - name: customer_name
+        description: "Customer full name"
+        tests:
+          - not_null
+
+      - name: rowhash_keys
+        description: "Hash of business key columns for change detection"
+        tests:
+          - not_null
+
+      - name: rowhash_nonkeys
+        description: "Hash of non-key attributes for SCD Type 2 tracking"
+        tests:
+          - not_null
+
+  - name: dim__product
+    description: "Product dimension with category hierarchy"
+    columns:
+      - name: product_key
+        description: "Surrogate key for product"
+        tests:
+          - unique
+          - not_null
+
+      - name: product_id_bkey
+        description: "Business key part 1 - product_id (composite with proudct_name_bkey)"
+        tests:
+          - not_null
+
+      - name: proudct_name_bkey
+        description: "Business key part 2 - product_name (composite with product_id_bkey)"
+        tests:
+          - not_null
+
+      - name: category
+        description: "Top-level product category"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Furniture', 'Office Supplies', 'Technology']
+
+      - name: sub_category
+        description: "Product sub-category"
+        tests:
+          - not_null
+
+      - name: rowhash_keys
+        description: "Hash of composite business key (product_id + product_name)"
+        tests:
+          - not_null
+
+      - name: rowhash_nonkeys
+        description: "Hash of non-key attributes (category + sub_category)"
+        tests:
+          - not_null
+
+    tests:
+      # Test that the composite business key is unique
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - product_id_bkey
+            - proudct_name_bkey
+
+  - name: dim__geography
+    description: "Geographic dimension with hierarchical location data"
+    columns:
+      - name: geography_key
+        description: "Surrogate key for geography"
+        tests:
+          - unique
+          - not_null
+
+      - name: country_region_bkey
+        description: "Business key - country/region"
+        tests:
+          - not_null
+
+      - name: city_bkey
+        description: "Business key - city"
+        tests:
+          - not_null
+
+      - name: postal_code_bkey
+        description: "Business key - postal code"
+        tests:
+          - not_null
+
+      - name: state
+        description: "State or province"
+        tests:
+          - not_null
+
+      - name: region
+        description: "Regional classification"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Central', 'East', 'South', 'West']
+
+      - name: rowhash_keys
+        description: "Hash of business keys"
+        tests:
+          - not_null
+
+      - name: rowhash_nonkeys
+        description: "Hash of non-key attributes"
+        tests:
+          - not_null
+
+    tests:
+      # Test that the composite business key is unique
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - country_region_bkey
+            - city_bkey
+            - postal_code_bkey
+
+  - name: dim__order
+    description: "Order dimension with order-level attributes"
+    columns:
+      - name: order_key
+        description: "Surrogate key for order"
+        tests:
+          - unique
+          - not_null
+
+      - name: order_bkey
+        description: "Business key (original order_id)"
+        tests:
+          - unique
+          - not_null
+
+      - name: ship_mode
+        description: "Shipping method"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Standard Class', 'Second Class', 'First Class', 'Same Day']
+
+      - name: segment
+        description: "Customer segment"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Consumer', 'Corporate', 'Home Office']
+
+      - name: rowhash_keys
+        description: "Hash of business key"
+        tests:
+          - not_null
+
+      - name: rowhash_nonkeys
+        description: "Hash of non-key attributes"
+        tests:
+          - not_null
+
+  - name: dim__date
+    description: "Date dimension with calendar attributes from 2010-2030"
+    columns:
+      - name: date_key
+        description: "Surrogate key in YYYYMMDD integer format"
+        tests:
+          - unique
+          - not_null
+
+      - name: date_bkey
+        description: "Business key (actual date value)"
+        tests:
+          - unique
+          - not_null
+
+      - name: year
+        description: "Year (YYYY)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2010
+              max_value: 2030
+              inclusive: true
+
+      - name: quarter
+        description: "Quarter (1-4)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4]
+
+      - name: month
+        description: "Month (1-12)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 12
+              inclusive: true
+
+      - name: day
+        description: "Day of month (1-31)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 31
+              inclusive: true
+
+      - name: day_of_week
+        description: "Day of week (0=Sunday, 6=Saturday)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1, 2, 3, 4, 5, 6]
+
+      - name: day_of_year
+        description: "Day of year (1-366)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 366
+              inclusive: true
+
+      - name: week_of_year
+        description: "Week number (1-53)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 53
+              inclusive: true
+
+      - name: month_name
+        description: "Full month name"
+        tests:
+          - not_null
+
+      - name: day_name
+        description: "Full day name"
+        tests:
+          - not_null
+
+      - name: is_weekend
+        description: "Boolean flag for weekend days"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+
+      - name: is_weekday
+        description: "Boolean flag for weekdays"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+
+    tests:
+      # Ensure weekend and weekday flags are mutually exclusive
+      - dbt_utils.expression_is_true:
+          expression: "(is_weekend AND NOT is_weekday) OR (NOT is_weekend AND is_weekday)"

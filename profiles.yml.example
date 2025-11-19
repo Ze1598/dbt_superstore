@@ -1,0 +1,16 @@
+# dbt Profile Configuration Template
+# Copy this file to profiles.yml and update with your credentials
+# NEVER commit the actual profiles.yml file!
+
+dbt_superstore:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      user: analytics           # Change to your database user
+      password: analytics       # Change to your database password
+      port: 5432
+      dbname: superstore       # Change to your database name
+      schema: analytics
+      threads: 4

@@ -1,0 +1,116 @@
+version: 2
+
+models:
+  - name: fct__orders
+    description: "Fact table combining order transactions with returns and all dimension keys"
+    columns:
+      - name: customer_key
+        description: "Foreign key to customer dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim__customer')
+              field: customer_key
+              config:
+                severity: error
+
+      - name: geography_key
+        description: "Foreign key to geography dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim__geography')
+              field: geography_key
+
+      - name: product_key
+        description: "Foreign key to product dimension (joins on composite key: product_id + product_name)"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim__product')
+              field: product_key
+
+      - name: order_key
+        description: "Foreign key to order dimension"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim__order')
+              field: order_key
+
+      - name: date_order_key
+        description: "Foreign key to date dimension (order date)"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim__date')
+              field: date_key
+              config:
+                where: "date_order_key IS NOT NULL"  # Only check non-null values
+
+      - name: date_ship_key
+        description: "Foreign key to date dimension (ship date)"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim__date')
+              field: date_key
+
+      - name: sales
+        description: "Sales revenue for this transaction"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+              config:
+                severity: warn  # Warn but don't fail if negative sales exist
+
+      - name: quantity
+        description: "Number of items ordered"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              inclusive: true
+
+      - name: discount
+        description: "Discount rate applied (0-1 decimal)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+              inclusive: true
+
+      - name: profit
+        description: "Profit amount (revenue minus costs)"
+        tests:
+          - not_null
+          # Note: Profit can be negative, so no range test here
+
+      - name: is_returned
+        description: "Binary flag indicating if order was returned (1=Yes, 0=No)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+    tests:
+      # Business rule: Ship date should be >= order date
+      - dbt_utils.expression_is_true:
+          expression: "date_ship_key >= date_order_key"
+          config:
+            severity: error
+
+      # Business rule: Discounted orders should have discount > 0
+      - dbt_utils.expression_is_true:
+          expression: "(discount > 0 AND sales > 0) OR discount = 0"
+          config:
+            severity: warn
+
+      # Row count validation: Should roughly match staging transactions
+      - dbt_utils.equal_rowcount:
+          compare_model: ref('stg__orders_transactions')
+          config:
+            severity: warn
