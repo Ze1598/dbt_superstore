@@ -115,7 +115,7 @@ models:
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/Ze1598/dbt_superstore.git
    cd dbt_superstore
    ```
 
